@@ -1,3 +1,3 @@
 # Drawing_pad
 
-run python file in streamlit environment
+run drawing_pad.py file in streamlit environment
