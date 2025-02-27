@@ -4,6 +4,7 @@ import os
 import streamlit as st
 import regex as re
 
+
 def is_line(lst):
     x1,y1,x2,y2 = lst[0][0],lst[0][1],lst[-1][0],lst[-1][1]
     m = (y2-y1)/(x2-x1)
@@ -24,7 +25,8 @@ def is_circle(lst):
         if len(d[d<r/4])/len(d)>0.8:
             return True,lst[np.argmax(D)]
     return False,None
-#-------------------------------------------------------
+
+# ---------------------------------------------
 
 def draw(shape,x1,x2,y1,y2,color,thickness):
     if shape == "line":
@@ -36,13 +38,11 @@ def draw(shape,x1,x2,y1,y2,color,thickness):
     elif shape == "ellipse":
         cv2.ellipse(img, ((x1+x2)//2,(y1+y2)//2), (100, 50) ,0, 0, 360,  color,  thickness)
 
-# ----------------------------------------------------
+# -------------------------------------------------
 
-division = 40
-n=0
-grid_lines = 0
+
 def select_option(x1,y1):
-    global colors,n,shapes_active,text,division,dct,grid_lines,grid_check,img_grid,height,width,background_color
+    global colors,n,shapes_active,text,division,dct,grid_lines,grid_check
     m=0
     if y1<100:
         if y1<50:
@@ -87,16 +87,48 @@ def select_option(x1,y1):
                     dct["parameters"] = "marker"
                     shapes_active[5]=4
                 elif x1>10*division and x1<11*division:
-                    img_grid = np.full((height,width,3),background_color,dtype=np.uint8)
+                    if grid_lines!=0:
+                        for i in range(100,height,grid_lines):
+                            cv2.line(img_grid,(0,i),(width,i),background_color,1)
                     if grid_lines==0:
                         grid_lines = 35
                     elif grid_lines == 35:
                         grid_lines = 49
                     else:
                         grid_lines = 0
-                    grid_check = 1
+                    grid_check=1
+        check_thickness()
+            
+# --------------------------------------------
 
-# ------------------------------------------------------------
+
+def nav_bar(nav):
+    if nav:
+        global division,grid_lines
+        division = 40
+        nav_img[:]=(0,0,0)
+        # colors
+        for i,j in colors.items():
+            cv2.circle(nav_img,((i)*division,25),j[2],j[1],-1)    
+        # shapes
+        cv2.line(nav_img,(30,15+50),(division+5,35+50),dct['color'],shapes_active[0])
+        cv2.rectangle(nav_img, (2*division,15+50), (3*division,35+50),dct['color'], shapes_active[1])
+        cv2.circle(nav_img,(4*division,25+50),12,dct['color'],shapes_active[2])
+        
+        cv2.putText(nav_img, 'text', (5*division,29+50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, dct['color'],1*int(shapes_active[3]/2), cv2.LINE_AA)
+        cv2.putText(nav_img, 'erase', (6*division+5,29+50), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , dct['color'],1*int(shapes_active[4]/2), cv2.LINE_AA)
+        cv2.putText(nav_img, 'marker', (8*division,29+50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, dct['color'],1*int(shapes_active[5]/2), cv2.LINE_AA)
+        cv2.putText(nav_img, 'grid', (10*division,29+50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, dct['color'],1, cv2.LINE_AA)
+        
+        cv2.putText(nav_img, f'thickness :{dct['thickness']}', (11*division,29+50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, dct['color'],1, cv2.LINE_AA)
+        cv2.line(nav_img,(14*division,75),(division*19,75),dct['color'],shapes_active[0])
+        if dct['color']!=(255,255,255):
+            cv2.circle(nav_img,(thickness_ball,75),10,(255,255,255),-1)
+        else:
+            cv2.circle(nav_img,(thickness_ball,75),10,(0,0,255),-1)
+        cv2.line(nav_img,(0,100),(width,100),(255,255,255),2)
+    
+    return  (0,nav_img)
 
 def thickness_bar(x1,y1):
     global thickness_ball
@@ -107,128 +139,92 @@ def thickness_bar(x1,y1):
             dct['thickness'] = thickness
         else:
             dct['thickness'] = -1
-
-
-# ----------------------------------------------------------------
-
+        check_thickness()
 def check_thickness():
     global dct,text
     if (dct["parameters"] in ['line','erase','marker'] or text) and dct["thickness"] in [-1,0]:
         dct["thickness"] = 1
 
-# ----------------------------------------------------------------
-
-thickness_ball = 14*division
-def nav_bar():
-    global division,grid_lines,abcd
-    top_bar = 100
-    division = 40
-    img[:top_bar,:]=(0,0,0)
-    
-    # colors
-    for i,j in colors.items():
-        cv2.circle(img,((i)*division,25),j[2],j[1],-1)    
-    
-    # shapes
-    cv2.line(img,(30,15+50),(division+5,35+50),dct['color'],shapes_active[0])
-    cv2.rectangle(img, (2*division,15+50), (3*division,35+50),dct['color'], shapes_active[1])
-    cv2.circle(img,(4*division,25+50),12,dct['color'],shapes_active[2])
-    
-    cv2.putText(img, 'text', (5*division,29+50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, dct['color'],1*int(shapes_active[3]/2), cv2.LINE_AA)
-    cv2.putText(img, 'erase', (6*division+5,29+50), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , dct['color'],1*int(shapes_active[4]/2), cv2.LINE_AA)
-    cv2.putText(img, 'marker', (8*division,29+50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, dct['color'],1*int(shapes_active[5]/2), cv2.LINE_AA)
-    cv2.putText(img, 'grid', (10*division,29+50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, dct['color'],1, cv2.LINE_AA)
-    
-    cv2.putText(img, f'thickness :{dct['thickness']}', (11*division,29+50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, dct['color'],1, cv2.LINE_AA)
-    cv2.line(img,(14*division,75),(division*19,75),dct['color'],shapes_active[0])
-    if dct['color']!=(255,255,255):
-        cv2.circle(img,(thickness_ball,75),10,(255,255,255),-1)
-    else:
-        cv2.circle(img,(thickness_ball,75),10,(0,0,255),-1)
-    
-    cv2.line(img,(0,100),(width,100),(255,255,255),2)
-    
-def grid():
-    global grid_check,img_grid
+grid_check=1
+def grid(grid_check):
+    global img_grid
     if grid_lines!=0 and grid_check:
-        grid_check = 0
         for i in range(100,height,grid_lines):
             cv2.line(img_grid,(0,i),(width,i),(100,100,100),1)
+    return 0
 
-# --------------------------------------------------------------
-
+# ------------------------------------------
 
 x1,y1 = 0,0
-a,b,c,d = 0,0,0,0
-count,count1 = 0,0
+division = 40
+grid_lines = 0
+a,b,c,d,n = 0,0,0,0,0
+count,count1,nav = 0,0,1
+thickness_ball = 14*division
+img_nav_bar = ""
 points = []
+grid_check = 1
 def mouse_tracking(event,x,y,flags,param):
     global x1, y1
-    global img,img2
-    global height,width,background_color,count,count1,points
-    global a,b,c,d,dct,text,lst,points,tab,grid_check
-    global colors,shapes_active,prev_img,img_show,img_grid
+    global img,img_show,img_grid,img_nav_bar
+    global height,width,background_color,count,count1
+    global a,b,c,d,dct,text,lst,points,tab
+    global prev_img,grid_check,nav
 
-    check_thickness()
     if event==1:
         points.clear()
         lst.clear()
         x1,y1,b = x,y,1
         select_option(x1,y1)
-        img2 = img.copy()
         prev_img = img.copy()
     elif event == 4:
-        x2,y2 = x,y
-        a=1
         b=0
-    
     if text:
-        a =0
         img = prev_img.copy()
         cv2.putText(img, ''.join(lst), (x1,y1), cv2.FONT_HERSHEY_SIMPLEX, 1, dct['color'], dct['thickness'], cv2.LINE_AA)
         if event==1:
             cv2.putText(img, ''.join(lst), (x1,y1), cv2.FONT_HERSHEY_SIMPLEX, 1, dct['color'], dct['thickness'], cv2.LINE_AA)
     if count1%10==0:
         count1=0
-        c,d=x,y
-    if b:
+        c,d=x,y        
+    if b or tab:
         if y1<100:
+            nav = 1
             thickness_bar(x,y)
-        points.append((x,y))
-    if b==1 or tab:
-        if dct["parameters"]=="marker":
+        elif dct["parameters"]=="marker":
             cv2.circle(img,(x,y),dct['thickness'],dct['color'],-1)
-            if ((c == x and d==y) or tab) and len(points)>5:
-                aa = points.copy()
+            points.append((x,y))
+            if ((c == x and d==y) or tab) and len(points)>10:
                 if count >=5 or tab:
                     count = 0 
                     if is_line(np.array(points)):
-                        img = img2.copy()
+                        img = prev_img.copy()
                         draw(shape = "line", x1 = x1,x2 = x,y1 = y1,y2 = y,color = dct['color'],thickness = dct['thickness'])
-                        
-                    is_c = is_circle(np.array(points))
-                    if is_c[0]:
-                        img = img2.copy()
-                        draw(shape = "circle", x1 = x1,x2 = is_c[1][0],y1 = y1,y2 = is_c[1][1],color = dct['color'],thickness = dct['thickness'])
+                    else:
+                        is_c = is_circle(np.array(points))
+                        if is_c[0]:
+                            img = prev_img.copy()
+                            draw(shape = "circle", x1 = x1,x2 = is_c[1][0],y1 = y1,y2 = is_c[1][1],color = dct['color'],thickness = dct['thickness'])
                 count +=1
             count1=count1+1
         elif dct["parameters"] == "erase":
-            grid_check=1
             cv2.circle(img,(x,y),dct['thickness'],background_color,-1)
         tab = 0
     if y1>100:
-        if a == 1 and not text:
-            a,b=0,0
-            draw(shape = dct["parameters"],x1 = x1,x2 = x,y1 = y1,y2 = y,color = dct['color'],thickness = dct['thickness'])
         if b == 1 and dct["parameters"]!="marker" and dct["parameters"]!="erase":
             img = prev_img.copy()
-            draw(shape = dct["parameters"], x1 = x1,x2 = x,y1 = y1,y2 = y,color = dct['color'],thickness = dct['thickness'])
-    else:
-        a=0
-    nav_bar()
-    grid()
+            draw(shape = dct["parameters"], x1 = x1,x2 = x,y1 = y1,y2 = y,color = dct['color'],thickness = dct['thickness']) 
+    
+  
+    nav,img_nav_bar = nav_bar(nav)
+    grid_check = grid(grid_check)
+    img[:102] = img_nav_bar
     img_show = cv2.add(img , img_grid)
     
+    
+
+
+
 #------------------------------------------------------
 
 def find_path(file_path,img_count):
@@ -275,7 +271,6 @@ def give_parameters(flag=1,height=500,width=500,background_color=(0,0,0)):
                 no_col = no_col+1
             else :
                 st.write("incorrect value",str(col))
-
     except Exception as e:
         flag = 0
         print(e)
@@ -304,16 +299,19 @@ if flag ==1:
     cv2.namedWindow("drawing_pad")
     cv2.setMouseCallback("drawing_pad",mouse_tracking)
     img = np.full((height,width,3),background_color,dtype=np.uint8)
-    prev_img = np.full((height,width,3),background_color,dtype=np.uint8)
-    img_show = np.full((height,width,3),background_color,dtype=np.uint8)
-    img_grid = np.full((height,width,3),background_color,dtype=np.uint8)
-
+    img_grid = img.copy()
+    prev_img = img.copy()
+    img_show = img.copy()
+    nav_img = np.full((102,width,3),(0,0,0),dtype=np.uint8)
+    img[:102] = nav_img
+    img_grid[:102] = nav_img
     if st.button(label="draw"):
 
         while True:
             # print("a")
-            cv2.imshow("drawing_pad",img_show)
             
+            
+
             key = cv2.waitKey(1)
             # succ,img2 = vid.read()
             # if succ == False:
@@ -323,11 +321,8 @@ if flag ==1:
             
             try:
                 if (key>=97 and key <= 122) or (key>=45 and key<=57):
-                    if key>47 and key <=57:
-                        lst.append(chr(key))
-                    else:
-                        lst.append(chr(key))
-                        
+                    lst.append(chr(key))
+                    
                 if key == ord('s') and not text:
                     if os.path.exists(floder_path):
                         file_path = os.path.join(floder_path, 'drawing')
@@ -374,6 +369,7 @@ if flag ==1:
                 print('invalid value')
                 lst.clear()
                 print(e)
+            cv2.imshow("drawing_pad",img_show)
             if key == 0:
                 break
 cv2.destroyAllWindows()
